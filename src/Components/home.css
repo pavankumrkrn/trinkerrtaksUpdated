@@ -1,0 +1,14 @@
+.img > .img-card {
+  position: absolute;
+}
+
+.img {
+  margin-top: 8vh;
+  margin-bottom: 8vh;
+}
+
+.round {
+  border: 1px solid black;
+  border-radius: 50%;
+  width: 100px;
+}

@@ -1,0 +1,8 @@
+.login {
+  margin-top: 20vh;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+}
+.response-text {
+  border: 1px solid blue;
+  border-radius: 5px;
+}
