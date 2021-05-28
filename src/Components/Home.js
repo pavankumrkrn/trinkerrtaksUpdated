@@ -5,7 +5,6 @@ import * as apicalls from "../APICalls/apicalls";
 import TinderCard from "react-tinder-card";
 import { getDateAndTime } from "../HelperMethods/getDateandTime";
 import { useHistory } from "react-router";
-import Timer from "./Timer";
 
 const Home = () => {
   const [im, setIm] = React.useState([...images].reverse());
@@ -14,12 +13,22 @@ const Home = () => {
   const [finished, setFinished] = React.useState(false);
   const [isdisabled, setisdisabled] = React.useState(false);
   const [message, setMessage] = React.useState("");
+  const [history, setHistory] = React.useState([]);
   const { push } = useHistory();
   const imgs = useRef(images);
+  const user = localStorage.getItem("name");
   const update = () => {
-    imgs.current.pop();
+    im.pop();
+    setIm(im);
+    imgs.current.shift();
   };
-  useEffect(() => {
+  useEffect(async () => {
+    let response = await apicalls.getHistory(phone);
+    if (response.payload.length) {
+      // alert("You have already rated");
+      setFinished(true);
+      setHistory(response.payload);
+    }
     if (phone === undefined || phone === "" || phone === null) {
       alert("Access denied");
       localStorage.clear();
@@ -27,19 +36,32 @@ const Home = () => {
     }
   }, []);
   const swipe = async (direction, obj) => {
-    imgs.current.pop();
-    console.log(imgs.current);
-    // if (direction === "left") {
-    //   direction = "accepted";
-    // } else if (direction === "right") {
-    //   direction = "rejected";
-    // }
-    // const { date, time } = getDateAndTime();
-    // let image = { date, time };
-    // image.name = obj.name;
-    // image.status = direction;
-    // let response = await apicalls.update(image, phone);
-    // console.log(response);
+    if (direction === "left") {
+      direction = "accepted";
+    } else if (direction === "right") {
+      direction = "rejected";
+    }
+    update();
+    setMessage(user + " have " + direction + " image " + obj.name);
+    setDisplay("block");
+    setTimeout(() => {
+      setDisplay("none");
+    }, 1500);
+    console.log(imgs.current, direction, im);
+    if (!imgs.current.length) {
+      setFinished(true);
+      let response = await apicalls.getHistory(phone);
+      console.log(response);
+      setHistory(response.payload);
+    }
+
+    const { date, time } = getDateAndTime();
+    let image = { date, time };
+    image.name = obj.name;
+    image.status = direction;
+    image.url = obj.url;
+    let response = await apicalls.update(image, phone);
+    console.log(response);
   };
 
   const clear = () => {
@@ -47,13 +69,15 @@ const Home = () => {
     push("/login");
   };
 
-  let [time, setTime] = React.useState(5);
+  let [time, setTime] = React.useState(25);
   const startTimer = () => {
     var decrement = () => {
       setTime(--time);
-      if (time <= 0) {
+      if (time % 5 == 0) {
         clearInterval(interval);
-        update();
+        if (im.length) {
+          swipe("ignored", im[im.length - 1]);
+        }
       }
     };
     var interval = setInterval(decrement, 1000);
@@ -69,7 +93,7 @@ const Home = () => {
               disabled={isdisabled}
               onClick={() => {
                 setisdisabled(true);
-                startTimer();
+                startTimer(5);
               }}
             >
               Start Timer
@@ -115,7 +139,7 @@ const Home = () => {
           </p>
           <div class="row mt-5">
             <div class="col-sm-8">
-              {images.map((i, index) => {
+              {history.map((i, index) => {
                 return (
                   <div class="card mb-3">
                     <div class="row">
@@ -127,9 +151,9 @@ const Home = () => {
                       <div class="col-sm-6">
                         <div class="m-5">
                           <p class="h6">Name : {i.name}</p>
-                          <p class="h6">Status : </p>
-                          <p class="h6">Date :</p>
-                          <p class="h6">Time :</p>
+                          <p class="h6">Status : {i.status}</p>
+                          <p class="h6">Date : {i.date}</p>
+                          <p class="h6">Time : {i.time}</p>
                         </div>
                       </div>
                     </div>

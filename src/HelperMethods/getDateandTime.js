@@ -6,7 +6,11 @@ const getDateAndTime = () => {
     (currentdate.getMonth() + 1) +
     "/" +
     currentdate.getFullYear();
-  var time = currentdate.getHours() + ":" + currentdate.getMinutes();
+  let minutes = currentdate.getMinutes();
+  if (minutes >= 1 && minutes <= 9) {
+    minutes = "0" + minutes;
+  }
+  var time = currentdate.getHours() + ":" + minutes;
   return { date, time };
 };
 
