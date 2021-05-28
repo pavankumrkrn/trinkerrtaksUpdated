@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import "./login.css";
 import * as apicalls from "../APICalls/apicalls";
 import Alert from "./Alert";
 import { useHistory } from "react-router";
+import { MyContext } from "../Context/MyContext";
 
 const Login = () => {
   const [text, setText] = useState("");
@@ -14,10 +15,22 @@ const Login = () => {
   const [isDis, setIsDis] = useState(false);
   const [modal, setModal] = useState(false);
   const [modalText, setModalText] = useState("");
+  const [context, setContext] = useContext(MyContext);
   const { push } = useHistory();
+  useEffect(() => {
+    localStorage.clear();
+  }, []);
   const validate = async () => {
     if (text.trim() !== "" && phone.length === 10 && !isNaN(+phone)) {
+      setContext({
+        loading: true,
+        opacity: "0.5",
+      });
       let response = await apicalls.validate(phone);
+      setContext({
+        loading: false,
+        opacity: "1",
+      });
       if (response.code === "green") {
         setIsDis(true);
         setOtp("");
@@ -41,7 +54,15 @@ const Login = () => {
       user.name = text;
       user.phone = phone;
       user.images = [];
+      setContext({
+        loading: true,
+        opacity: "0.5",
+      });
       let response = await apicalls.signUp(user);
+      setContext({
+        loading: false,
+        opacity: "1",
+      });
       if (response.code === "green") {
         console.log(response);
         localStorage.setItem("token", response.token);
@@ -79,7 +100,7 @@ const Login = () => {
                     <div className="col-sm-12">
                       <input
                         type="text"
-                        className="form-control"
+                        className="form-control bg-warning"
                         value={text}
                         onChange={(e) => setText(e.target.value)}
                         id="username"
@@ -92,7 +113,7 @@ const Login = () => {
                     <div className="col-sm-12">
                       <input
                         type="number"
-                        className="form-control"
+                        className="form-control bg-warning"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         id="phoneNumber"
@@ -125,7 +146,7 @@ const Login = () => {
                         <div className="col-sm-12">
                           <input
                             type="number"
-                            className="form-control"
+                            className="form-control bg-warning"
                             id="otp"
                             value={otp}
                             onChange={(e) => setOtp(e.target.value)}

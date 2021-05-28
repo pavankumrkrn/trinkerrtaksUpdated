@@ -1,10 +1,11 @@
-import React, { useEffect, useRef } from "react";
+import React, { useContext, useEffect, useRef } from "react";
 import { images } from "../shared/images";
 import "./home.css";
 import * as apicalls from "../APICalls/apicalls";
 import TinderCard from "react-tinder-card";
 import { getDateAndTime } from "../HelperMethods/getDateandTime";
 import { useHistory } from "react-router";
+import { MyContext } from "../Context/MyContext";
 
 const Home = () => {
   const [im, setIm] = React.useState([...images].reverse());
@@ -14,18 +15,21 @@ const Home = () => {
   const [isdisabled, setisdisabled] = React.useState(false);
   const [message, setMessage] = React.useState("");
   const [history, setHistory] = React.useState([]);
+  const [context, setContext] = useContext(MyContext);
+
+  let [itime, setTime] = React.useState(5);
   const { push } = useHistory();
-  const imgs = useRef(images);
+  let interval = 0;
   const user = localStorage.getItem("name");
   const update = () => {
     im.pop();
     setIm(im);
-    imgs.current.shift();
   };
   useEffect(async () => {
     let response = await apicalls.getHistory(phone);
-    if (response.payload.length) {
+    if (response.payload.length >= 5) {
       // alert("You have already rated");
+      setisdisabled(true);
       setFinished(true);
       setHistory(response.payload);
     }
@@ -47,13 +51,11 @@ const Home = () => {
     setTimeout(() => {
       setDisplay("none");
     }, 1500);
-    console.log(imgs.current, direction, im);
-    if (!imgs.current.length) {
-      setFinished(true);
-      let response = await apicalls.getHistory(phone);
-      console.log(response);
-      setHistory(response.payload);
-    }
+    clearInterval(interval);
+    itime = 5;
+    setTime(5);
+    startTimer();
+    console.log(direction, im);
 
     const { date, time } = getDateAndTime();
     let image = { date, time };
@@ -62,6 +64,20 @@ const Home = () => {
     image.url = obj.url;
     let response = await apicalls.update(image, phone);
     console.log(response);
+    if (!im.length) {
+      setFinished(true);
+      setContext({
+        loading: true,
+        opacity: "0.5",
+      });
+      let response = await apicalls.getHistory(phone);
+      console.log(response);
+      setHistory(response.payload);
+      setContext({
+        loading: false,
+        opacity: "1",
+      });
+    }
   };
 
   const clear = () => {
@@ -69,18 +85,20 @@ const Home = () => {
     push("/login");
   };
 
-  let [time, setTime] = React.useState(25);
   const startTimer = () => {
     var decrement = () => {
-      setTime(--time);
-      if (time % 5 == 0) {
+      if (itime !== 0) {
+        setTime(--itime);
+      }
+      if (itime === 0) {
         clearInterval(interval);
+        itime = 5;
         if (im.length) {
           swipe("ignored", im[im.length - 1]);
         }
       }
     };
-    var interval = setInterval(decrement, 1000);
+    interval = setInterval(decrement, 1000);
   };
 
   return (
@@ -101,35 +119,41 @@ const Home = () => {
           </a>
           <ul className="navbar-nav ml-auto">
             <li className="nav-item">
-              <p className="h4">Timer : {time}</p>
+              <p className="h4">Timer : {itime}</p>
             </li>
           </ul>
         </div>
       </nav>
-
-      <div className="message" style={{ display: display }}>
-        {message}
+      <div class="row justify-content-center">
+        <div
+          className="message text-center col-sm-6"
+          style={{ display: display }}
+        >
+          {message}
+        </div>
       </div>
 
       {!finished ? (
         <div className="row justify-content-center">
-          {im.map((i, index) => {
-            return (
-              <TinderCard
-                onSwipe={(direction) => {
-                  swipe(direction, i);
-                }}
-                preventSwipe={["up", "down"]}
-              >
-                <div className="card img-card p-3" key={index}>
-                  <div className="card-text p-3">
-                    <p className="text-center h3">{i.name}</p>
+          <div class="col-sm-6">
+            {im.map((i, index) => {
+              return (
+                <TinderCard
+                  onSwipe={(direction) => {
+                    swipe(direction, i);
+                  }}
+                  preventSwipe={["up", "down"]}
+                >
+                  <div className="card noBo img-card p-3" key={index}>
+                    <div className="card-text p-3">
+                      <p className="text-center h3">{i.name}</p>
+                    </div>
+                    <img src={i.url} alt="" className="card-img-top img" />
                   </div>
-                  <img src={i.url} alt="" className="card-img-top img" />
-                </div>
-              </TinderCard>
-            );
-          })}
+                </TinderCard>
+              );
+            })}
+          </div>
         </div>
       ) : (
         <div className="container m-5 p-5">
@@ -141,10 +165,10 @@ const Home = () => {
             <div class="col-sm-8">
               {history.map((i, index) => {
                 return (
-                  <div class="card mb-3">
+                  <div class="card shadow mb-3">
                     <div class="row">
                       <div class="col-sm-6">
-                        <div class="card m-5">
+                        <div class="card noBo m-5">
                           <img src={i.url} alt="" class="card-img-top" />
                         </div>
                       </div>
